@@ -29,12 +29,17 @@
 	}
 
 	//SHOW FORM
+	//Here we print the actual form to test the /getMovie part of the API. This could be replaced
+	//with just an error message if this service is intended to be used purely by some kind of frontend
+	//javascript or curl/httpie/etc.
+	//Now we print the error messages to the top of the page.
 	function show_form($errors = array()) {
 		if ($errors) {
 			print "<br>Errors in the form: <ul style='color:red;'><li>";
 			print implode('</li><li>', $errors);
 			print "</li></ul>";
 		}
+		//HTML looks messy but is good enough at least for test purposes.
 		print<<<_HTML_
 <!DOCTYPE html>
 <html lang='en'>
