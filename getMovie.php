@@ -52,11 +52,15 @@
         //the client.
 	function validate() {
 		$errors = array();
-		$token = $_POST['token'];
-		$secret = 'sec!ReT423*&';
-		$result = Token::validate($token, $secret);
-		if ($result != TRUE) {
+		if (!isset($_POST['token'])) {
 			$errors['error'] = "Invalid query";
+		} else {
+			$token = $_POST['token'];
+			$secret = 'sec!ReT423*&';
+			$result = Token::validate($token, $secret);
+			if ($result != TRUE) {
+				$errors['error'] = "Invalid query";
+			}
 		}
 		return $errors;
 	}
