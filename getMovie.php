@@ -1,4 +1,7 @@
 <?php
+	//Require the ReallySimpleJWT token.
+	require_once('vendor/autoload.php');
+	use ReallySimpleJWT\Token;
 	//This is the basic setup of the page. If we have stuff in the POST, we go to validate it.
 	//If the data passess validation, we go to process it. If it doesn't we print the errors.
 	//For this we use a series of if/else sentences and $_SERVER array.
@@ -9,17 +12,25 @@
 			getMovie();
 		}
 	} else {
+		$form_errors['error'] = "Invalid query";
+		getError($form_errors);
 	}
 
 	//GETMOVIE
 	//Here we set up the parameters of the JSON query  and the perform the query to the omdbapi URL.
-	//As a result we get a JSON list which we print on the page.
+	//As a result we get a JSON list which we print on the page. As the parameters are within the JWT
+	//token they need a bit of disassembly.
 	function getMovie() {
+		$tokenstring = $_POST['token'];
+		$secret = 'sec!ReT423*&'; //Bad token, should be more abstract.
+		$token = Token::getPayload($tokenstring, $secret);
+		$data = $token['data'];
+		parse_str($data, $data);
 		header('Content-Type: application/json');
 		$params = array('apikey' => '87520499',
-				't' => htmlentities($_POST['t']),
-				'y' => htmlentities($_POST['y']),
-				'plot' => htmlentities($_POST['plot']),
+				't' => $data['t'],
+				'y' => $data['y'],
+				'plot' => $data['plot'],
 				'r' => 'json');
 		$url = "http://www.omdbapi.com/?" . http_build_query($params);
 		$response = file_get_contents($url);
@@ -35,35 +46,17 @@
 		}
 	}
 
-	//VALIDATE FORM
-	//Quick validation for the form. Checks:
-	//1. If the user entered a valid title.
-	//2. If the year is a proper integer.
-	//3. If the plot choice is not "" or "full".
-	//Return an array of found errors.
+	//VALIDATION
+        //Quick validation for the request. Uses token validation from the ReallySimpleJWT.
+        //We could have additional validation here also for the data in the token, but we already do that on
+        //the client.
 	function validate() {
 		$errors = array();
-
-		//Validate title
-		if (!isset($_POST['t'])) {
-			$errors['empty_title'] = "Please enter a title.";
-		}
-
-		//Validate year
-		$year_ok = filter_input(INPUT_POST, 'y', FILTER_VALIDATE_INT);
-		if (is_null($year_ok) || ($year_ok === false)) {
-			$errors['valid_year'] = "Please enter a valid integer for year.";
-		}
-
-		//Validate plot choice
-		if (!isset($_POST['plot'])) {
-			$errors['valid_plot'] = "Please enter a valid plot choice ('short' or 'full').";
-		} else {
-			if ($_POST['plot'] != "short") {
-				if ($_POST['plot'] != "full") {
-					$errors['valid_plot'] = "Please enter a valid plot choice ('short' or 'full').";
-				}
-			}
+		$token = $_POST['token'];
+		$secret = 'sec!ReT423*&';
+		$result = Token::validate($token, $secret);
+		if ($result != TRUE) {
+			$errors['error'] = "Invalid query";
 		}
 		return $errors;
 	}

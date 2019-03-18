@@ -1,7 +1,9 @@
 <?php
-	//This is the basic setup of the page. If we have stuff in the POST, we go to validate it.
-	//If the data passess validation, we go to process it. If it doesn't we print the errors.
-	//For this we use a series of if/else sentences and $_SERVER array.
+	//Require the ReallySimpleJWT
+	require_once('vendor/autoload.php');
+	use ReallySimpleJWT\Token;
+	//This is the basic setup of the endpoint. If we have stuff in the POST, we go to validate it.
+	//If the data passess validation, we go to process it. If it doesn't we process the errors instead.
 	if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 		if ($form_errors = validate()) {
 			getError($form_errors);
@@ -9,14 +11,22 @@
 			getBook();
 		}
 	} else {
+		$form_errors['error'] = "Invalid query";
+		getError($form_errors);
 	}
 
 	//GETBOOK
 	//Here we set up the parameters of the JSON query  and the perform the query to the openLibrary URL.
-	//As a result we get a JSON list which we print on the page.
+	//As a result we get a JSON list which we print on the page. As the results arrive as a JWT token, they
+	//need a bit of disassembly.
 	function getBook() {
+		$tokenstring = $_POST['token'];
+		$secret = 'sec!ReT423*&'; //Bad secret and should be changed to something more abstract in the future
+		$token = Token::getPayload($tokenstring, $secret);
+		$data = $token['data'];
+		parse_str($data, $data);
 		header('Content-Type: application/json');
-		$params = array('bibkeys' => htmlentities($_POST['isbn']),
+		$params = array('bibkeys' => $data['isbn'],
 				'format' => 'json',
 				'jscmd' => 'data');
 		$url = "http://www.openlibrary.org/api/books?" . http_build_query($params);
@@ -25,7 +35,7 @@
 	}
 
 	//SHOW ERRORS
-	//If the POST call did not pass validation, we send a json list of errors to the user.
+	//If the POST request did not pass validation, we send a json list of errors to the user.
 	function getError($errors = array()) {
 		if ($errors) {
 			header('Content-Type: application/json');
@@ -34,17 +44,17 @@
 	}
 
 	//VALIDATION
-	//Quick validation for the request. Checks:
-	//1. If the user entered a valid ISBN number.
-	//Return an array of found errors.
+	//Quick validation for the request. Uses token validation from the ReallySimpleJWT.
+	//We could have additional validation here also for the data in the token, but we already do that on
+	//the client.
 	function validate() {
 		$errors = array();
-
-		//Validate title
-		if (!isset($_POST['isbn'])) {
-			$errors['empty_title'] = "Please enter a valid isbn.";
+		$token = $_POST['token'];
+		$secret = 'sec!ReT423*&';
+		$result = Token::validate($token, $secret);
+		if ($result != TRUE) {
+			$errors['error'] = "Invalid query";
 		}
-
 		return $errors;
 	}
 ?>

@@ -9,6 +9,6 @@
 	<h3>/getBook</h3>
 	<ul>
 		<li><code>curl -d "isbn=9780870540370" -X POST http://www.topiniskala.com/~topi/testapi/getBook.php</code></li>
-		<li><code>curl -d "isbn=" -X POST http://www.topiniskala.com/~topi/testapi/getBook.php</code></li>
+		<li><code>curl -d "isbn=9781594629747" -X POST http://www.topiniskala.com/~topi/testapi/getBook.php</code></li>
 	</ul>
 </div>
